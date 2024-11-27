@@ -1,0 +1,2 @@
+const url = "https://xotfiafqjsyafsirzhst.supabase.co";
+const anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvdGZpYWZxanN5YWZzaXJ6aHN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIwNTA5MjgsImV4cCI6MjA0NzYyNjkyOH0.Db7b06s9SkmNPehzfwKWi16Riy6ulMmZ6n6eGN9KMzA";
