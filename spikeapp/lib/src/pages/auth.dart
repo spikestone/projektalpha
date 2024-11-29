@@ -29,7 +29,7 @@ class _AuthScreenState extends State<AuthScreen> {
           UserFormField(
             keyName: 'first_name',
             displayName: 'First name',
-            defaultValue: faker.person.firstName(),
+            defaultValue: '',
             fieldValidator: (value) {
               if (value == null || value == '') return 'Required';
               return null;
@@ -38,7 +38,7 @@ class _AuthScreenState extends State<AuthScreen> {
           UserFormField(
             keyName: 'last_name',
             displayName: 'Last name',
-            defaultValue: faker.person.lastName(),
+            defaultValue: '',
             fieldValidator: (value) {
               if (value == null || value == '') return 'Required';
               return null;
