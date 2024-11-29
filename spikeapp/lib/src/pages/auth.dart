@@ -21,7 +21,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) => FlutterLogin(
-        logo: const AssetImage('assets/flyer_logo.png'),
+        logo: const AssetImage('assets/logo.png'),
         savedEmail: faker.internet.email(),
         savedPassword: 'Qawsed1-', //faker.internet.password(),
         navigateBackAfterRecovery: true,
