@@ -4,14 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:pocketbase/pocketbase.dart';
-
+import 'global.dart' as global;
 class AuthWidget extends StatefulWidget {
+  
+   
   @override
   _AuthWidgetState createState() => _AuthWidgetState();
 }
 
 class _AuthWidgetState extends State<AuthWidget> {
-  final PocketBase pb = PocketBase('https://spikestone.site');
+  PocketBase pb = global.pb;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
@@ -68,7 +70,11 @@ class _AuthWidgetState extends State<AuthWidget> {
         await pb
             .collection('users')
             .authWithPassword(emailController.text, passwordController.text);
-          Navigator.pushNamed(context, '/home');
+        Navigator.pushNamed(context, '/home');
+        final authData = await pb.collection('users').authRefresh();
+        if (kDebugMode) {
+          print(authData);
+        }
         // Login erfolgreich, weitere Verarbeitung hier
       } else {
         final body = <String, dynamic>{

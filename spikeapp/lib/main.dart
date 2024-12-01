@@ -1,11 +1,14 @@
 
 import 'package:flutter/material.dart';
+import 'package:pocketbase/pocketbase.dart';
 import 'package:spikeapp/blank.dart';
+import 'package:spikeapp/forum.dart';
 import 'package:spikeapp/home.dart';
 import 'login.dart';
 
 
 void main() {
+  final PocketBase pb = PocketBase('https://spikestone.site');
   runApp(MyApp());
 }
 
@@ -19,6 +22,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => AuthWidget(),
         '/home' : (context) => HomePage(),
         '/blank' : (context) => Blank(),
+        '/forum' : (context) => ForumPage(),
       },
     );
   }

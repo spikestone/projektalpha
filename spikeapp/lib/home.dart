@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:pocketbase/pocketbase.dart';
+import 'global.dart' as global;
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -142,9 +143,12 @@ class HomePage extends StatelessWidget {
                     // Action for Calendar button
                     Navigator.pushNamed(context, '/blank');
                   }),
-                  _buildAnimatedCard('Forum', Icons.forum, Colors.deepPurpleAccent, () {
+                  _buildAnimatedCard('Forum', Icons.forum, Colors.deepPurpleAccent, () async {
+                   
                     // Action for Forum button
-                    Navigator.pushNamed(context, '/blank');
+                   final authData = await global.pb.collection('users').authRefresh();
+                   print(authData);
+                    Navigator.pushNamed(context, '/forum');
                   }),
                   _buildAnimatedCard('Calculator', Icons.calculate, Colors.deepPurpleAccent, () {
                     // Action for Calculator button
