@@ -1,4 +1,4 @@
-# example
+# spikeapp
 
 A new Flutter project.
 
