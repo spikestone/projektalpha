@@ -3,8 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  emoji_picker_flutter
-  url_launcher_linux
+  file_selector_linux
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

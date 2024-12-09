@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:pocketbase/pocketbase.dart';
+import 'package:spikeapp/blank.dart';
+import 'package:spikeapp/forum.dart';
+import 'package:spikeapp/home.dart';
+import 'login.dart';
 
-import 'package:get/get.dart';
-import 'package:spikeapp/app/services/storage_service.dart';
 
-import 'app/routes/app_pages.dart';
-import 'app/services/pocketbase_service.dart';
+void main() {
+  final PocketBase pb = PocketBase('https://spikestone.site');
+  runApp(MyApp());
+}
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Get.putAsync(() => StorageService().init());
-  await Get.putAsync(() => PocketbaseService().init());
-
-  runApp(
-    GetMaterialApp(
-      title: "PocketBase Chat",
-      debugShowCheckedModeBanner: false,
-      initialRoute:
-          PocketbaseService.to.isAuth ? Routes.DASHBOARD : Routes.LOGIN,
-      getPages: AppPages.routes,
-    ),
-  );
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'spikeapp',
+      initialRoute: '/',
+      routes: {
+        '/': (context) => AuthWidget(),
+        '/home' : (context) => HomePage(),
+        '/blank' : (context) => Blank(),
+        '/forum' : (context) => ForumPage(),
+      },
+    );
+  }
 }
