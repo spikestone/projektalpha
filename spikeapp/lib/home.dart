@@ -125,7 +125,7 @@ class HomePage extends StatelessWidget {
                 children: [
                   _buildAnimatedCard('Profile', Icons.person, Colors.deepPurpleAccent, () {
                     // Action for Profile button
-                    Navigator.pushNamed(context, '/blank');
+                    Navigator.pushNamed(context, '/upload');
                   }),
                   _buildAnimatedCard('Chats', Icons.chat, Colors.deepPurpleAccent, () {
                     // Action for Chats button

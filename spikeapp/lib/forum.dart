@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:http/http.dart' as http;
@@ -27,14 +26,12 @@ class _ForumPageState extends State<ForumPage> {
 
   void _fetchPosts() async {
     try {
-      // Initial fetch of posts
       final records = await pb.collection('forum').getFullList();
       setState(() {
         _posts = records.map((record) => record.toJson()).toList();
         _isLoading = false;
       });
     } catch (e) {
-      // Fehlerbehandlung hier
       setState(() {
         _isLoading = false;
       });
@@ -45,11 +42,10 @@ class _ForumPageState extends State<ForumPage> {
   }
 
   void _subscribeToRealTimeUpdates() {
-    // Subscribe to changes in any forum record
     pb.collection('forum').subscribe('*', (e) {
       setState(() {
         if (e.action == 'create') {
-          _posts.add(e.record?.toJson() ?? {});
+          _posts.insert(0, e.record?.toJson() ?? {});
         } else if (e.action == 'update') {
           final index = _posts.indexWhere((post) => post['id'] == e.record?.id);
           if (index != -1) {
@@ -71,7 +67,6 @@ class _ForumPageState extends State<ForumPage> {
 
   @override
   void dispose() {
-    // Unsubscribe from all real-time updates
     pb.collection('forum').unsubscribe('*');
     super.dispose();
   }
@@ -92,40 +87,37 @@ class _ForumPageState extends State<ForumPage> {
       body: Container(
         color: Colors.grey[900],
         child: _isLoading
-            ? Center(
-                child: SpinKitFadingCircle(color: Colors.deepPurple),
-              )
+            ? Center(child: SpinKitFadingCircle(color: Colors.deepPurple))
             : ListView.builder(
                 itemCount: _posts.length,
                 itemBuilder: (context, index) {
                   final post = _posts[index];
                   return Card(
                     color: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: ListTile(
                       leading: post['image'] != null
-                          ? Image.network(post['image'])
-                          : Icon(Icons.account_circle, color: Colors.deepPurpleAccent),
+                          ? Image.network(
+                              pb.baseUrl + '/api/files/forum/' + post['id'] + '/' + post['image'],
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.cover,
+                            )
+                          : Icon(Icons.image, color: Colors.deepPurpleAccent, size: 50),
                       title: Text(
                         post['title'] ?? 'No Title',
                         style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            post['content'] ?? 'No Content',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          if (post['file'] != null)
-                            Text(
-                              'Attachment: ${post['file']}',
-                              style: TextStyle(color: Colors.blueAccent, fontSize: 12),
-                            ),
-                        ],
+                      subtitle: Text(
+                        post['content'] ?? 'No Content',
+                        style: TextStyle(color: Colors.white70),
                       ),
+                      
+                      trailing: Icon(Icons.message, color: Colors.deepPurple),
+                      onTap: () {
+                        
+                      },
                     ),
                   );
                 },
@@ -145,41 +137,66 @@ class AddPostPage extends StatefulWidget {
 }
 
 class _AddPostPageState extends State<AddPostPage> {
-  final PocketBase pb = PocketBase('https://spikestone.site');
+  final PocketBase pb = global.pb;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  XFile? _image;
+  Uint8List? _imageBytes; // Für Webbrowser
   bool _isLoading = false;
-  File? _image;
-  File? _file;
 
   final ImagePicker _picker = ImagePicker();
 
-  void _addPost() async {
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+      if (pickedFile != null) {
+        if (kIsWeb) {
+          // Web: Lade die Datei als Bytes
+          final bytes = await pickedFile.readAsBytes();
+          setState(() {
+            _image = pickedFile;
+            _imageBytes = bytes;
+          });
+        } else {
+          // Andere Plattformen: Nutze den Dateipfad
+          setState(() {
+            _image = pickedFile;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+    }
+  }
+
+  Future<void> _addPost() async {
+   /* if (_titleController.text.isEmpty || (_image == null && _imageBytes == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bitte Titel und Bild auswählen')),
+      );
+      return;
+    } */
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      List<http.MultipartFile> files = [];
+      var files = <http.MultipartFile>[];
 
       if (_image != null) {
-        files.add(
-          http.MultipartFile.fromBytes(
-            'documents',
-            await _image!.readAsBytes(),
-            filename: _image!.path.split('/').last,
-          ),
-        );
-      }
-
-      if (_file != null) {
-        files.add(
-          http.MultipartFile.fromBytes(
-            'documents',
-            await _file!.readAsBytes(),
-            filename: _file!.path.split('/').last,
-          ),
-        );
+        if (kIsWeb) {
+          // Web: Datei über Bytes hochladen
+          files.add(http.MultipartFile.fromBytes(
+            'image',
+            _imageBytes!,
+            filename: _image!.name,
+          ));
+        } else {
+          // Andere Plattformen: Datei über den Pfad hochladen
+          files.add(await http.MultipartFile.fromPath('image', _image!.path));
+        }
       }
 
       await pb.collection('forum').create(
@@ -193,34 +210,12 @@ class _AddPostPageState extends State<AddPostPage> {
       widget.onPostAdded();
       Navigator.pop(context);
     } catch (e) {
-      // Fehlerbehandlung hier
-      setState(() {
-        _isLoading = false;
-      });
-      if (kDebugMode) {
-        print('Error adding post: $e');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fehler beim Hochladen: $e')),
+      );
     } finally {
       setState(() {
         _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result != null) {
-      setState(() {
-        _file = File(result.files.single.path!);
       });
     }
   }
@@ -236,75 +231,50 @@ class _AddPostPageState extends State<AddPostPage> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: 'Title',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: Icon(Icons.title),
-                  ),
-                ),
-                SizedBox(height: 20),
-                TextField(
-                  controller: _contentController,
-                  decoration: InputDecoration(
-                    labelText: 'Content',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: Icon(Icons.text_snippet),
-                  ),
-                  maxLines: 5,
-                ),
-                SizedBox(height: 20),
-                _image != null
-                    ? Image.file(_image!)
-                    : ElevatedButton(
-                        onPressed: _pickImage,
-                        child: Text('Pick Image'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                SizedBox(height: 20),
-                _file != null
-                    ? Text('File selected')
-                    : ElevatedButton(
-                        onPressed: _pickFile,
-                        child: Text('Pick File'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                SizedBox(height: 20),
-                _isLoading
-                    ? SpinKitFadingCircle(color: Colors.deepPurple)
-                    : ElevatedButton(
-                        onPressed: _addPost,
-                        child: Text('Add Post'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-              ],
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: 'Title',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: Icon(Icons.title),
+              ),
             ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _contentController,
+              decoration: InputDecoration(
+                labelText: 'Content',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: Icon(Icons.text_snippet),
+              ),
+              maxLines: 5,
+            ),
+            SizedBox(height: 20),
+            _imageBytes != null || _image != null
+                ? (kIsWeb
+                    ? Image.memory(_imageBytes!, height: 150)
+                    : Image.file(File(_image!.path), height: 150))
+                : ElevatedButton(
+                    onPressed: _pickImage,
+                    child: Text('Pick Image'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+            SizedBox(height: 20),
+            _isLoading
+                ? CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _addPost,
+                    child: Text('Add Post'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
           ],
         ),
       ),
