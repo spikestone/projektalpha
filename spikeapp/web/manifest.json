@@ -1,6 +1,6 @@
 {
-    "name": "spikeapp",
-    "short_name": "spikeapp",
+    "name": "pocketbase_chat",
+    "short_name": "pocketbase_chat",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
